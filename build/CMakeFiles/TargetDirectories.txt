@@ -1,0 +1,3 @@
+/Users/ilia/Coding/Kazem/build/CMakeFiles/KazemVPN.dir
+/Users/ilia/Coding/Kazem/build/CMakeFiles/edit_cache.dir
+/Users/ilia/Coding/Kazem/build/CMakeFiles/rebuild_cache.dir
