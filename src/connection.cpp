@@ -93,7 +93,6 @@ void Connection::disconnect() {
     }
 }
 
-// Send data to the VPN server
 int Connection::send_data(const uint8_t* data, size_t length) {
     if (!connected_) {
         std::cerr << "Cannot send data: not connected" << std::endl;
@@ -185,11 +184,9 @@ bool Connection::is_connected() const {
 // Perform the initial VPN handshake
 bool Connection::perform_handshake() {
     try {
-        // Step 1: Send a hello message with client version
         std::string hello_msg = "HELLO VPNClient v1.0";
         boost::asio::write(socket_, boost::asio::buffer(hello_msg));
         
-        // Step 2: Receive the server's response
         char response[1024] = {0};
         size_t length = socket_.read_some(boost::asio::buffer(response));
         std::string server_response(response, length);

@@ -61,8 +61,6 @@ int main(int argc, char* argv[]) {
         std::cout << "Starting KazemVPN client..." << std::endl;
         std::cout << "Connecting to server: " << server_ip << ":" << server_port << std::endl;
         
-        // Step 1: Create the IO context
-        // This is the core Boost.Asio object that drives all asynchronous operations
         boost::asio::io_context io_context;
         
         // Step 2: Create the connection object
