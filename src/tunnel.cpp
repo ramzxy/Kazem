@@ -21,7 +21,6 @@
 #include <linux/if_tun.h>
 #endif
 
-// Constructor - initialize the tunnel
 Tunnel::Tunnel(std::shared_ptr<Connection> connection, 
                std::shared_ptr<Encryption> encryption)
     : connection_(connection),
@@ -36,14 +35,11 @@ Tunnel::Tunnel(std::shared_ptr<Connection> connection,
     std::cout << "Tunnel object initialized" << std::endl;
 }
 
-// Destructor - ensure clean shutdown
 Tunnel::~Tunnel() {
-    // Stop the tunnel if it's running
     if (running_) {
         stop();
     }
     
-    // Close the TUN device if it's open
     if (tun_fd_ >= 0) {
         close(tun_fd_);
         tun_fd_ = -1;
@@ -52,23 +48,18 @@ Tunnel::~Tunnel() {
     std::cout << "Tunnel object destroyed" << std::endl;
 }
 
-// Start the VPN tunnel
 bool Tunnel::start() {
-    // Check if the tunnel is already running
     if (running_) {
         std::cerr << "Tunnel is already running" << std::endl;
         return false;
     }
     
-    // Check if we have a valid connection
     if (!connection_ || !connection_->is_connected()) {
         std::cerr << "No valid connection to VPN server" << std::endl;
         return false;
     }
     
-    // Step 1: Create a TUN interface
-    // For educational purposes, we'll use a simplified approach
-    // In a real VPN client, this would involve platform-specific code
+
     tun_fd_ = create_tun_interface("vpn0");
     if (tun_fd_ < 0) {
         std::cerr << "Failed to create TUN interface" << std::endl;
@@ -77,8 +68,7 @@ bool Tunnel::start() {
     
     std::cout << "Created TUN interface with fd: " << tun_fd_ << std::endl;
     
-    // Step 2: Configure routing
-    // This would set up the system to route traffic through our VPN
+
     if (!configure_routing()) {
         std::cerr << "Failed to configure routing" << std::endl;
         close(tun_fd_);
@@ -88,11 +78,10 @@ bool Tunnel::start() {
     
     std::cout << "Configured routing for VPN tunnel" << std::endl;
     
-    // Step 3: Start the tunnel
+
     running_ = true;
     
-    // Step 4: Start the worker threads
-    // These threads will handle the actual packet processing
+
     tun_to_server_thread_ = std::thread(&Tunnel::tun_to_server_worker, this);
     server_to_tun_thread_ = std::thread(&Tunnel::server_to_tun_worker, this);
     
@@ -100,9 +89,7 @@ bool Tunnel::start() {
     return true;
 }
 
-// Stop the VPN tunnel
 void Tunnel::stop() {
-    // Check if the tunnel is running
     if (!running_) {
         return;
     }
@@ -128,7 +115,6 @@ void Tunnel::stop() {
     std::cout << "VPN tunnel stopped" << std::endl;
 }
 
-// Check if the tunnel is active
 bool Tunnel::is_active() const {
     return running_ && tun_fd_ >= 0 && connection_ && connection_->is_connected();
 }
@@ -147,11 +133,9 @@ std::string Tunnel::get_stats() const {
 
 // Create a TUN/TAP virtual network interface
 int Tunnel::create_tun_interface(const std::string& name) {
-    // This is a simplified implementation for educational purposes
-    // In a real VPN client, this would be platform-specific
+
     
     #ifdef __APPLE__
-    // macOS implementation (simplified)
     // On macOS, we use the utun kernel control interface
     
     // Step 1: Create a PF_SYSTEM socket for communicating with the kernel
@@ -224,9 +208,7 @@ int Tunnel::create_tun_interface(const std::string& name) {
 
 // Configure the system routing table
 bool Tunnel::configure_routing() {
-    // This is a simplified implementation for educational purposes
-    // In a real VPN client, this would involve executing system commands
-    // to modify the routing table
+
     
     // For educational purposes, we'll just pretend this works
     std::cout << "Note: In a real VPN client, this would configure the system's routing table" << std::endl;
@@ -236,10 +218,6 @@ bool Tunnel::configure_routing() {
     std::cout << "      2. Adding routes for the VPN server to bypass the tunnel" << std::endl;
     std::cout << "      3. Configuring DNS servers" << std::endl;
     
-    // In a real implementation, we would run commands like:
-    // - On Linux: ip route add ... or route add ...
-    // - On macOS: route add ...
-    // - On Windows: route add ... or netsh interface ip add route ...
     
     return true;
 }

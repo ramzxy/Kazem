@@ -3,7 +3,6 @@
 #include <string>
 #include <boost/asio.hpp>
 
-// Constructor - initialize the connection components
 Connection::Connection(boost::asio::io_context& io_context, 
                        const std::string& server_ip, 
                        int server_port)
@@ -13,14 +12,14 @@ Connection::Connection(boost::asio::io_context& io_context,
       server_port_(server_port),
       connected_(false) {
     
-    // Log initialization
+
     std::cout << "Connection object initialized with server: " 
               << server_ip << ":" << server_port << std::endl;
 }
 
-// Destructor - ensure we disconnect cleanly
+
 Connection::~Connection() {
-    // If still connected, disconnect
+
     if (connected_) {
         disconnect();
     }
@@ -28,29 +27,27 @@ Connection::~Connection() {
     std::cout << "Connection object destroyed" << std::endl;
 }
 
-// Connect to the VPN server
+
 bool Connection::connect() {
     try {
-        // Step 1: Create a resolver to look up the server address
+
         boost::asio::ip::tcp::resolver resolver(io_context_);
         
-        // Step 2: Resolve the server address to a list of endpoints
-        // This converts a hostname and service name (port) into a list of endpoints
+
         boost::asio::ip::tcp::resolver::results_type endpoints = 
             resolver.resolve(server_ip_, std::to_string(server_port_));
         
         std::cout << "Resolved server address, attempting connection..." << std::endl;
         
-        // Step 3: Attempt to connect to one of the endpoints
-        // The connect function will try each endpoint in sequence until it succeeds
+
         boost::asio::connect(socket_, endpoints);
         
-        // Step 4: If we get here, we're connected at the TCP level
+
         connected_ = true;
         std::cout << "TCP connection established to " 
                   << server_ip_ << ":" << server_port_ << std::endl;
         
-        // Step 5: Perform the VPN protocol handshake
+
         if (!perform_handshake()) {
             std::cerr << "VPN handshake failed" << std::endl;
             disconnect();
@@ -61,26 +58,25 @@ bool Connection::connect() {
         return true;
         
     } catch (const boost::system::system_error& e) {
-        // Handle connection errors
+
         std::cerr << "Connection error: " << e.what() << std::endl;
         connected_ = false;
         return false;
     }
 }
 
-// Disconnect from the VPN server
+
 void Connection::disconnect() {
     if (!connected_) {
         return;  // Already disconnected
     }
     
     try {
-        // Step 1: Send a disconnect message to the server
+
         // This is a courtesy to let the server know we're disconnecting
         std::string disconnect_msg = "DISCONNECT";
         boost::asio::write(socket_, boost::asio::buffer(disconnect_msg));
         
-        // Step 2: Close the socket
         socket_.close();
         
         connected_ = false;
@@ -176,12 +172,12 @@ int Connection::receive_data(uint8_t* data, size_t max_length) {
     }
 }
 
-// Check if we're connected
+
 bool Connection::is_connected() const {
     return connected_ && socket_.is_open();
 }
 
-// Perform the initial VPN handshake
+
 bool Connection::perform_handshake() {
     try {
         std::string hello_msg = "HELLO VPNClient v1.0";
@@ -193,27 +189,21 @@ bool Connection::perform_handshake() {
         
         std::cout << "Server response: " << server_response << std::endl;
         
-        // Step 3: Verify the server's response
-        // In a real VPN, this would involve more complex authentication
-        // and key exchange, possibly using certificates
+
         if (server_response.find("HELLO_ACK") == std::string::npos) {
             std::cerr << "Invalid server response during handshake" << std::endl;
             return false;
         }
-        
-        // Step 4: Send authentication information
-        // In a real VPN, this would be encrypted and include
-        // username/password or certificate information
+
         std::string auth_msg = "AUTH user=demo pass=demo";
         boost::asio::write(socket_, boost::asio::buffer(auth_msg));
         
-        // Step 5: Receive authentication result
+
         length = socket_.read_some(boost::asio::buffer(response));
         server_response = std::string(response, length);
         
         std::cout << "Auth response: " << server_response << std::endl;
         
-        // Step 6: Verify authentication success
         if (server_response.find("AUTH_OK") == std::string::npos) {
             std::cerr << "Authentication failed" << std::endl;
             return false;
