@@ -21,7 +21,7 @@
 #include <linux/if_tun.h>
 #endif
 
-Tunnel::Tunnel(std::shared_ptr<Connection> connection, 
+Tunnel::Tunnel(std::shared_ptr<Connection> connection,
                std::shared_ptr<Encryption> encryption)
     : connection_(connection),
       encryption_(encryption),
@@ -30,132 +30,147 @@ Tunnel::Tunnel(std::shared_ptr<Connection> connection,
       bytes_sent_(0),
       bytes_received_(0),
       packets_sent_(0),
-      packets_received_(0) {
-    
+      packets_received_(0)
+{
+
     std::cout << "Tunnel object initialized" << std::endl;
 }
 
-Tunnel::~Tunnel() {
-    if (running_) {
+Tunnel::~Tunnel()
+{
+    if (running_)
+    {
         stop();
     }
-    
-    if (tun_fd_ >= 0) {
+
+    if (tun_fd_ >= 0)
+    {
         close(tun_fd_);
         tun_fd_ = -1;
     }
-    
+
     std::cout << "Tunnel object destroyed" << std::endl;
 }
 
-bool Tunnel::start() {
-    if (running_) {
+bool Tunnel::start()
+{
+    if (running_)
+    {
         std::cerr << "Tunnel is already running" << std::endl;
         return false;
     }
-    
-    if (!connection_ || !connection_->is_connected()) {
+
+    if (!connection_ || !connection_->is_connected())
+    {
         std::cerr << "No valid connection to VPN server" << std::endl;
         return false;
     }
-    
 
     tun_fd_ = create_tun_interface("vpn0");
-    if (tun_fd_ < 0) {
+    if (tun_fd_ < 0)
+    {
         std::cerr << "Failed to create TUN interface" << std::endl;
         return false;
     }
-    
-    std::cout << "Created TUN interface with fd: " << tun_fd_ << std::endl;
-    
 
-    if (!configure_routing()) {
+    std::cout << "Created TUN interface with fd: " << tun_fd_ << std::endl;
+
+    if (!configure_routing())
+    {
         std::cerr << "Failed to configure routing" << std::endl;
         close(tun_fd_);
         tun_fd_ = -1;
         return false;
     }
-    
+
     std::cout << "Configured routing for VPN tunnel" << std::endl;
-    
 
     running_ = true;
-    
 
     tun_to_server_thread_ = std::thread(&Tunnel::tun_to_server_worker, this);
     server_to_tun_thread_ = std::thread(&Tunnel::server_to_tun_worker, this);
-    
+
     std::cout << "VPN tunnel started" << std::endl;
     return true;
 }
 
-void Tunnel::stop() {
-    if (!running_) {
+void Tunnel::stop()
+{
+    if (!running_)
+    {
         return;
     }
-    
+
     // Step 1: Signal the worker threads to stop
     running_ = false;
-    
+
     // Step 2: Wait for the worker threads to finish
-    if (tun_to_server_thread_.joinable()) {
+    if (tun_to_server_thread_.joinable())
+    {
         tun_to_server_thread_.join();
     }
-    
-    if (server_to_tun_thread_.joinable()) {
+
+    if (server_to_tun_thread_.joinable())
+    {
         server_to_tun_thread_.join();
     }
-    
+
     // Step 3: Close the TUN device
-    if (tun_fd_ >= 0) {
+    if (tun_fd_ >= 0)
+    {
         close(tun_fd_);
         tun_fd_ = -1;
     }
-    
+
     std::cout << "VPN tunnel stopped" << std::endl;
 }
 
-bool Tunnel::is_active() const {
+bool Tunnel::is_active() const
+{
     return running_ && tun_fd_ >= 0 && connection_ && connection_->is_connected();
 }
 
 // Get statistics about the tunnel
-std::string Tunnel::get_stats() const {
+std::string Tunnel::get_stats() const
+{
     std::string stats = "VPN Tunnel Statistics:\n";
     stats += "  Running: " + std::string(running_ ? "Yes" : "No") + "\n";
     stats += "  Bytes sent: " + std::to_string(bytes_sent_) + "\n";
     stats += "  Bytes received: " + std::to_string(bytes_received_) + "\n";
     stats += "  Packets sent: " + std::to_string(packets_sent_) + "\n";
     stats += "  Packets received: " + std::to_string(packets_received_) + "\n";
-    
+
     return stats;
 }
 
-// Create a TUN/TAP virtual network interface
-int Tunnel::create_tun_interface(const std::string& name) {
+// Create a TUN/TAP virtual network interfa
 
-    
-    #ifdef __APPLE__
+int Tunnel::create_tun_interface(const std::string &name)
+{
+
+#ifdef __APPLE__
     // On macOS, we use the utun kernel control interface
-    
+
     // Step 1: Create a PF_SYSTEM socket for communicating with the kernel
     int fd = socket(PF_SYSTEM, SOCK_DGRAM, SYSPROTO_CONTROL);
-    if (fd < 0) {
+    if (fd < 0)
+    {
         std::cerr << "Failed to create control socket" << std::endl;
         return -1;
     }
-    
+
     // Step 2: Connect to the utun control device
     struct ctl_info ctlInfo;
     memset(&ctlInfo, 0, sizeof(ctlInfo));
     strncpy(ctlInfo.ctl_name, UTUN_CONTROL_NAME, sizeof(ctlInfo.ctl_name));
-    
-    if (ioctl(fd, CTLIOCGINFO, &ctlInfo) < 0) {
+
+    if (ioctl(fd, CTLIOCGINFO, &ctlInfo) < 0)
+    {
         std::cerr << "Failed to get utun control info" << std::endl;
         close(fd);
         return -1;
     }
-    
+
     // Step 3: Connect to the first available utun device
     struct sockaddr_ctl sc;
     memset(&sc, 0, sizeof(sc));
@@ -163,158 +178,173 @@ int Tunnel::create_tun_interface(const std::string& name) {
     sc.sc_len = sizeof(sc);
     sc.sc_family = AF_SYSTEM;
     sc.sc_unit = 0; // This will create utun0, 1 for utun1, etc.
-    
-    if (connect(fd, (struct sockaddr *)&sc, sizeof(sc)) < 0) {
+
+    if (connect(fd, (struct sockaddr *)&sc, sizeof(sc)) < 0)
+    {
         std::cerr << "Failed to connect to utun device" << std::endl;
         close(fd);
         return -1;
     }
-    
+
     std::cout << "Created utun device" << std::endl;
     return fd;
-    
-    #elif defined(__linux__)
+
+#elif defined(__linux__)
     // Linux implementation (simplified)
     // On Linux, we use the /dev/net/tun device
-    
+
     // Step 1: Open the TUN/TAP device
     int fd = open("/dev/net/tun", O_RDWR);
-    if (fd < 0) {
+    if (fd < 0)
+    {
         std::cerr << "Failed to open /dev/net/tun" << std::endl;
         return -1;
     }
-    
+
     // Step 2: Set up the TUN device
     struct ifreq ifr;
     memset(&ifr, 0, sizeof(ifr));
     ifr.ifr_flags = IFF_TUN | IFF_NO_PI; // TUN device, no packet info
     strncpy(ifr.ifr_name, name.c_str(), IFNAMSIZ);
-    
-    if (ioctl(fd, TUNSETIFF, &ifr) < 0) {
+
+    if (ioctl(fd, TUNSETIFF, &ifr) < 0)
+    {
         std::cerr << "Failed to set TUN device parameters" << std::endl;
         close(fd);
         return -1;
     }
-    
+
     std::cout << "Created TUN device: " << name << std::endl;
     return fd;
-    
-    #else
+
+#else
     // Unsupported platform
     std::cerr << "TUN/TAP not implemented for this platform" << std::endl;
     return -1;
-    #endif
+#endif
 }
 
 // Configure the system routing table
-bool Tunnel::configure_routing() {
+bool Tunnel::configure_routing()
+{
 
-    
-    // For educational purposes, we'll just pretend this works
+    // TODO: Implement this
     std::cout << "Note: In a real VPN client, this would configure the system's routing table" << std::endl;
     std::cout << "      to route traffic through the VPN tunnel." << std::endl;
     std::cout << "      This typically involves:" << std::endl;
     std::cout << "      1. Setting the default route to go through the TUN interface" << std::endl;
     std::cout << "      2. Adding routes for the VPN server to bypass the tunnel" << std::endl;
     std::cout << "      3. Configuring DNS servers" << std::endl;
-    
-    
+
     return true;
 }
 
 // Thread function for processing packets from TUN to server
-void Tunnel::tun_to_server_worker() {
+void Tunnel::tun_to_server_worker()
+{
     std::cout << "Started TUN to server worker thread" << std::endl;
-    
+
     // Buffer for reading packets from the TUN interface
     std::vector<uint8_t> buffer(2048);
-    
-    while (running_) {
+
+    while (running_)
+    {
         // Step 1: Read a packet from the TUN interface
         ssize_t bytes_read = read(tun_fd_, buffer.data(), buffer.size());
-        
-        if (bytes_read <= 0) {
+
+        if (bytes_read <= 0)
+        {
             // Error or no data
-            if (bytes_read < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+            if (bytes_read < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+            {
                 std::cerr << "Error reading from TUN: " << strerror(errno) << std::endl;
             }
-            
+
             // Sleep a bit to avoid busy-waiting
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             continue;
         }
-        
+
         // Step 2: Process the outgoing packet
         // This includes encapsulation and encryption
         std::vector<uint8_t> packet(buffer.begin(), buffer.begin() + bytes_read);
-        
-        if (!process_outgoing_packet(packet)) {
+
+        if (!process_outgoing_packet(packet))
+        {
             std::cerr << "Failed to process outgoing packet" << std::endl;
             continue;
         }
-        
+
         // Update statistics
         bytes_sent_ += bytes_read;
         packets_sent_++;
-        
-        #ifdef DEBUG_MODE
+
+#ifdef DEBUG_MODE
         std::cout << "Sent packet of " << bytes_read << " bytes to server" << std::endl;
-        #endif
+#endif
     }
-    
+
     std::cout << "TUN to server worker thread stopped" << std::endl;
 }
 
 // Thread function for processing packets from server to TUN
-void Tunnel::server_to_tun_worker() {
+void Tunnel::server_to_tun_worker()
+{
     std::cout << "Started server to TUN worker thread" << std::endl;
-    
+
     // Buffer for reading packets from the server
     std::vector<uint8_t> buffer(2048);
-    
-    while (running_) {
+
+    while (running_)
+    {
         // Step 1: Read a packet from the server
         int bytes_read = connection_->receive_data(buffer.data(), buffer.size());
-        
-        if (bytes_read <= 0) {
+
+        if (bytes_read <= 0)
+        {
             // Error or no data
-            if (bytes_read < 0) {
+            if (bytes_read < 0)
+            {
                 std::cerr << "Error reading from server" << std::endl;
             }
-            
+
             // Sleep a bit to avoid busy-waiting
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             continue;
         }
-        
+
         // Step 2: Process the incoming packet
         // This includes decryption and de-encapsulation
         std::vector<uint8_t> packet(buffer.begin(), buffer.begin() + bytes_read);
-        
-        if (!process_incoming_packet(packet)) {
+
+        if (!process_incoming_packet(packet))
+        {
             std::cerr << "Failed to process incoming packet" << std::endl;
             continue;
         }
-        
+
         // Update statistics
         bytes_received_ += bytes_read;
         packets_received_++;
-        
-        #ifdef DEBUG_MODE
+
+#ifdef DEBUG_MODE
         std::cout << "Received packet of " << bytes_read << " bytes from server" << std::endl;
-        #endif
+#endif
     }
-    
+
     std::cout << "Server to TUN worker thread stopped" << std::endl;
 }
 
 // Process a packet from the local system
-bool Tunnel::process_outgoing_packet(const std::vector<uint8_t>& packet) {
-    try {
-        // Step 1: Analyze the packet (for educational purposes)
-        // In a real VPN, we might need to modify the packet headers
-        #ifdef DEBUG_MODE
-        if (packet.size() >= 20) {  // Minimum IPv4 header size
+bool Tunnel::process_outgoing_packet(const std::vector<uint8_t> &packet)
+{
+    try
+    {
+// Step 1: Analyze the packet (for educational purposes)
+// In a real VPN, we might need to modify the packet headers
+#ifdef DEBUG_MODE
+        if (packet.size() >= 20)
+        { // Minimum IPv4 header size
             // Extract some basic information from the IPv4 header
             uint8_t version = (packet[0] >> 4) & 0xF;
             uint8_t ihl = packet[0] & 0xF;
@@ -322,98 +352,107 @@ bool Tunnel::process_outgoing_packet(const std::vector<uint8_t>& packet) {
             uint8_t protocol = packet[9];
             uint32_t src_ip = (packet[12] << 24) | (packet[13] << 16) | (packet[14] << 8) | packet[15];
             uint32_t dst_ip = (packet[16] << 24) | (packet[17] << 16) | (packet[18] << 8) | packet[19];
-            
-            std::cout << "Outgoing packet: IPv" << (int)version 
+
+            std::cout << "Outgoing packet: IPv" << (int)version
                       << ", Protocol: " << (int)protocol
                       << ", Length: " << total_length
                       << ", Src IP: " << ((src_ip >> 24) & 0xFF) << "."
-                                      << ((src_ip >> 16) & 0xFF) << "."
-                                      << ((src_ip >> 8) & 0xFF) << "."
-                                      << (src_ip & 0xFF)
+                      << ((src_ip >> 16) & 0xFF) << "."
+                      << ((src_ip >> 8) & 0xFF) << "."
+                      << (src_ip & 0xFF)
                       << ", Dst IP: " << ((dst_ip >> 24) & 0xFF) << "."
-                                      << ((dst_ip >> 16) & 0xFF) << "."
-                                      << ((dst_ip >> 8) & 0xFF) << "."
-                                      << (dst_ip & 0xFF)
+                      << ((dst_ip >> 16) & 0xFF) << "."
+                      << ((dst_ip >> 8) & 0xFF) << "."
+                      << (dst_ip & 0xFF)
                       << std::endl;
         }
-        #endif
-        
+#endif
+
         // Step 2: Encrypt the packet
         // In a real VPN, we would also add a header with sequence numbers, etc.
         std::vector<uint8_t> encrypted_packet = encryption_->encrypt(packet);
-        
-        if (encrypted_packet.empty()) {
+
+        if (encrypted_packet.empty())
+        {
             std::cerr << "Failed to encrypt packet" << std::endl;
             return false;
         }
-        
+
         // Step 3: Send the encrypted packet to the server
         int bytes_sent = connection_->send_data(encrypted_packet.data(), encrypted_packet.size());
-        
-        if (bytes_sent < 0) {
+
+        if (bytes_sent < 0)
+        {
             std::cerr << "Failed to send packet to server" << std::endl;
             return false;
         }
-        
+
         return true;
-        
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception &e)
+    {
         std::cerr << "Error processing outgoing packet: " << e.what() << std::endl;
         return false;
     }
 }
 
 // Process a packet from the VPN server
-bool Tunnel::process_incoming_packet(const std::vector<uint8_t>& packet) {
-    try {
+bool Tunnel::process_incoming_packet(const std::vector<uint8_t> &packet)
+{
+    try
+    {
         // Step 1: Decrypt the packet
         std::vector<uint8_t> decrypted_packet = encryption_->decrypt(packet);
-        
-        if (decrypted_packet.empty()) {
+
+        if (decrypted_packet.empty())
+        {
             std::cerr << "Failed to decrypt packet" << std::endl;
             return false;
         }
-        
-        // Step 2: Analyze the packet (for educational purposes)
-        #ifdef DEBUG_MODE
-        if (decrypted_packet.size() >= 20) {  // Minimum IPv4 header size
+
+// Step 2: Analyze the packet (for educational purposes)
+#ifdef DEBUG_MODE
+        if (decrypted_packet.size() >= 20)
+        { // Minimum IPv4 header size
             // Extract some basic information from the IPv4 header
             uint8_t version = (decrypted_packet[0] >> 4) & 0xF;
             uint8_t ihl = decrypted_packet[0] & 0xF;
             uint16_t total_length = (decrypted_packet[2] << 8) | decrypted_packet[3];
             uint8_t protocol = decrypted_packet[9];
-            uint32_t src_ip = (decrypted_packet[12] << 24) | (decrypted_packet[13] << 16) | 
+            uint32_t src_ip = (decrypted_packet[12] << 24) | (decrypted_packet[13] << 16) |
                               (decrypted_packet[14] << 8) | decrypted_packet[15];
-            uint32_t dst_ip = (decrypted_packet[16] << 24) | (decrypted_packet[17] << 16) | 
+            uint32_t dst_ip = (decrypted_packet[16] << 24) | (decrypted_packet[17] << 16) |
                               (decrypted_packet[18] << 8) | decrypted_packet[19];
-            
-            std::cout << "Incoming packet: IPv" << (int)version 
+
+            std::cout << "Incoming packet: IPv" << (int)version
                       << ", Protocol: " << (int)protocol
                       << ", Length: " << total_length
                       << ", Src IP: " << ((src_ip >> 24) & 0xFF) << "."
-                                      << ((src_ip >> 16) & 0xFF) << "."
-                                      << ((src_ip >> 8) & 0xFF) << "."
-                                      << (src_ip & 0xFF)
+                      << ((src_ip >> 16) & 0xFF) << "."
+                      << ((src_ip >> 8) & 0xFF) << "."
+                      << (src_ip & 0xFF)
                       << ", Dst IP: " << ((dst_ip >> 24) & 0xFF) << "."
-                                      << ((dst_ip >> 16) & 0xFF) << "."
-                                      << ((dst_ip >> 8) & 0xFF) << "."
-                                      << (dst_ip & 0xFF)
+                      << ((dst_ip >> 16) & 0xFF) << "."
+                      << ((dst_ip >> 8) & 0xFF) << "."
+                      << (dst_ip & 0xFF)
                       << std::endl;
         }
-        #endif
-        
+#endif
+
         // Step 3: Write the decrypted packet to the TUN interface
         ssize_t bytes_written = write(tun_fd_, decrypted_packet.data(), decrypted_packet.size());
-        
-        if (bytes_written < 0) {
+
+        if (bytes_written < 0)
+        {
             std::cerr << "Failed to write packet to TUN: " << strerror(errno) << std::endl;
             return false;
         }
-        
+
         return true;
-        
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception &e)
+    {
         std::cerr << "Error processing incoming packet: " << e.what() << std::endl;
         return false;
     }
-} 
+}
