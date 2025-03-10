@@ -93,6 +93,10 @@ private:
     std::atomic<uint64_t> packets_sent_;
     std::atomic<uint64_t> packets_received_;
     
+    // Routing information for restoration
+    std::string original_gateway_;
+    std::string original_interface_;
+    
     /**
      * @brief Create a TUN/TAP virtual network interface
      * @param name Name for the interface
@@ -110,6 +114,15 @@ private:
      * This sets up the system to route traffic through the VPN tunnel.
      */
     bool configure_routing();
+    
+    /**
+     * @brief Restore the original system routing
+     * @return true if routing was restored successfully
+     * 
+     * This restores the system's original routing configuration when
+     * disconnecting from the VPN.
+     */
+    bool restore_routing();
     
     /**
      * @brief Thread function for processing packets from TUN to server

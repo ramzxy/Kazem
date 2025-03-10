@@ -79,14 +79,18 @@ public:
      * @return true if connected, false otherwise
      */
     bool is_connected() const;
-
+    
+    /**
+     * @brief Get the server IP address
+     * @return The IP address of the VPN server
+     */
+    std::string server_ip_;
 private:
     // Boost ASIO components for networking
     boost::asio::io_context& io_context_;
     boost::asio::ip::tcp::socket socket_;
     
     // Server connection details
-    std::string server_ip_;
     int server_port_;
     
     // Connection state

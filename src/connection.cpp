@@ -11,6 +11,7 @@ Connection::Connection(boost::asio::io_context &io_context,
       server_ip_(server_ip),
       server_port_(server_port),
       connected_(false)
+
 {
 
     std::cout << "Connection object initialized with server: "
@@ -234,3 +235,9 @@ bool Connection::perform_handshake()
         return false;
     }
 }
+
+// Get the server IP address
+std::string Connection::get_server_ip() const {
+    return server_ip_;
+}
+
