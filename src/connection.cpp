@@ -237,7 +237,4 @@ bool Connection::perform_handshake()
 }
 
 // Get the server IP address
-std::string Connection::get_server_ip() const {
-    return server_ip_;
-}
 

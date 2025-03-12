@@ -1,0 +1,92 @@
+compilation_database_dir: debug
+output_directory: docs/diagrams
+comment_parser: clang
+add_compile_flags:
+  - -fparse-all-comments
+  - -Wno-deprecated-declarations
+  - -Wno-ignored-optimization-argument
+remove_compile_flags:
+  - -Wno-class-memaccess
+  - -Wno-dangling-reference
+plantuml:
+  cmd: "plantuml -tsvg \"docs/diagrams/{}.puml\""
+mermaid:
+  cmd: "mmdc -i \"docs/diagrams/{}.mmd\" -o \"docs/diagrams/{}.svg\""
+generate_links:
+  link: "{% if existsIn(element, \"doxygen_link\") %}{{ element.doxygen_link }}{% endif %}"
+  tooltip: "{% if existsIn(element, \"comment\") and existsIn(element.comment, \"brief\") %}{{ abbrv(trim(replace(element.comment.brief.0, \"\\n+\", \" \")), 256) }}{% else %}{{ element.name }}{% endif %}"
+fold_repeated_activities: true
+diagrams:
+  # Class diagrams
+  class_translation_unit_visitor:
+    include!: uml/class/class_translation_unit_visitor.yml
+  architecture_visitors_class:
+    include!: uml/class/architecture_visitors_class.yml
+  config_class:
+    include!: uml/class/config_class.yml
+  config_context_class:
+    include!: uml/class/config_context_class.yml
+  compilation_database_context_class:
+    include!: uml/class/compilation_database_context_class.yml
+  inheritable_diagram_options_context_class:
+    include!: uml/class/inheritable_diagram_options_context_class.yml
+  diagram_config_hierarchy_class:
+    include!: uml/class/diagram_config_hierarchy_class.yml
+  diagram_hierarchy_class:
+    include!: uml/class/diagram_hierarchy_class.yml
+  decorated_element_hierarchy_class:
+    include!: uml/class/decorated_element_hierarchy_class.yml
+  stylable_element_hierarchy_class:
+    include!: uml/class/stylable_element_hierarchy_class.yml
+  source_location_hierarchy_class:
+    include!: uml/class/source_location_hierarchy_class.yml
+  filter_visitor_hierarchy_class:
+    include!: uml/class/filter_visitor_hierarchy_class.yml
+  diagram_filter_context_class:
+    include!: uml/class/diagram_filter_context_class.yml
+  nested_trait_hierarchy_class:
+    include!: uml/class/nested_trait_hierarchy_class.yml
+  package_hierarchy_class:
+    include!: uml/class/package_hierarchy_class.yml
+  source_file_hierarchy_class:
+    include!: uml/class/source_file_hierarchy_class.yml
+  template_trait_hierarchy_class:
+    include!: uml/class/template_trait_hierarchy_class.yml
+  comment_visitor_hierarchy_class:
+    include!: uml/class/comment_visitor_hierarchy_class.yml
+  decorators_class:
+    include!: uml/class/decorators_class.yml
+  relationship_context_class:
+    include!: uml/class/relationship_context_class.yml
+  common_model_class:
+    include!: uml/class/common_model_class.yml
+  class_model_class:
+    include!: uml/class/class_model_class.yml
+  diagram_element_hierarchy_class:
+    include!: uml/class/diagram_element_hierarchy_class.yml
+  sequence_model_class:
+    include!: uml/class/sequence_model_class.yml
+  package_model_class:
+    include!: uml/class/package_model_class.yml
+  # Sequence diagrams
+  main_sequence:
+    include!: uml/sequence/main_sequence.yml
+  load_config_sequence:
+    include!: uml/sequence/load_config_sequence.yml
+  cli_handle_options_sequence:
+    include!: uml/sequence/cli_handle_options_sequence.yml
+  diagram_generate_generic_sequence:
+    include!: uml/sequence/diagram_generate_generic_sequence.yml
+  class_diagram_generator_sequence:
+    include!: uml/sequence/class_diagram_generator_sequence.yml
+  plantuml_sequence_diagram_generator_sequence:
+    include!: uml/sequence/plantuml_sequence_diagram_generator_sequence.yml
+  template_builder_sequence:
+    include!: uml/sequence/template_builder_sequence.yml
+  # Package diagrams
+  architecture_package:
+    include!: uml/package/architecture_package.yml
+  # Include diagrams
+  include_graph:
+    include!: uml/include/include.yml
+

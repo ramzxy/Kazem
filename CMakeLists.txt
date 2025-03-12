@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.10)
 project(KazemVPN CXX)
 
+# Set CMake policies
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+
 # Set C++ standard before defining targets
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
