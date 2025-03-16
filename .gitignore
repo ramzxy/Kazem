@@ -1,0 +1,108 @@
+# Build directories
+build/
+bin/
+lib/
+out/
+cmake-build-*/
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+KazemVPN
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+Makefile
+cmake_install.cmake
+install_manifest.txt
+CTestTestfile.cmake
+_deps/
+
+# Keep compile_commands.json for tooling
+# compile_commands.json
+
+# IDE specific files
+# Visual Studio
+.vs/
+*.sdf
+*.opensdf
+*.suo
+*.user
+*.vcxproj.filters
+ipch/
+
+# Visual Studio Code
+.vscode/*
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
+.vscode/c_cpp_properties.json
+*.code-workspace
+
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux specific
+*~
+.directory
+
+# Logs and databases
+*.log
+
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# OpenSSL generated files
+*.rnd
+
+# Temporary files
+temp/
+tmp/
+
+# Cache directories
+.cache/
+
+# Don't ignore
+!.gitignore
+!CMakeLists.txt
+!README.md
+!LICENSE 
