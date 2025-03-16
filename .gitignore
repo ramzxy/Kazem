@@ -42,6 +42,8 @@ cmake_install.cmake
 install_manifest.txt
 CTestTestfile.cmake
 _deps/
+*.cmake
+!CMakeLists.txt
 
 # Keep compile_commands.json for tooling
 # compile_commands.json
@@ -103,6 +105,5 @@ tmp/
 
 # Don't ignore
 !.gitignore
-!CMakeLists.txt
 !README.md
 !LICENSE 
